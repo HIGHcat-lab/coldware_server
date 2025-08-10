@@ -5,9 +5,20 @@ const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 
 const app = express();
-const dbFile = "./.data/licenses.db";
+const path = require("path");
+const fs = require("fs");
+
+// Ensure .data folder exists
+const dataDir = path.join(__dirname, ".data");
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir);
+}
+
+// Use licenses.db inside .data
+const dbFile = path.join(dataDir, "licenses.db");
 const exists = fs.existsSync(dbFile);
 const db = new sqlite3.Database(dbFile);
+
 
 // Parse JSON bodies
 app.use(bodyParser.json());
