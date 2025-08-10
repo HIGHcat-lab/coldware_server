@@ -1,42 +1,3 @@
-// Add to top of server.js
-const bodyParser = require("body-parser");
-app.use(bodyParser.json());
-
-// Activate license
-app.post("/activate", (req, res) => {
-  const { license, hwid } = req.body;
-  if (!license || !hwid) return res.status(400).json({ message: "Missing license or hwid" });
-
-  db.get("SELECT * FROM licenses WHERE key = ?", [license], (err, row) => {
-    if (err) return res.status(500).json({ message: "DB error" });
-    if (!row) return res.status(404).json({ message: "License not found" });
-
-    if (!row.hwid) {
-      db.run("UPDATE licenses SET hwid = ? WHERE key = ?", [hwid, license], err2 => {
-        if (err2) return res.status(500).json({ message: "DB error" });
-        return res.json({ message: "Activated successfully" });
-      });
-    } else if (row.hwid === hwid) {
-      return res.json({ message: "Already activated on this machine" });
-    } else {
-      return res.status(403).json({ message: "License already bound to another HWID" });
-    }
-  });
-});
-
-// Verify license
-app.post("/verify", (req, res) => {
-  const { license, hwid } = req.body;
-  if (!license || !hwid) return res.status(400).json({ message: "Missing license or hwid" });
-
-  db.get("SELECT * FROM licenses WHERE key = ? AND hwid = ?", [license, hwid], (err, row) => {
-    if (err) return res.status(500).json({ message: "DB error" });
-    if (row) return res.json({ message: "Valid" });
-    else return res.status(403).json({ message: "Invalid or mismatched HWID" });
-  });
-});
-
-
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
@@ -48,6 +9,7 @@ const dbFile = "./.data/licenses.db";
 const exists = fs.existsSync(dbFile);
 const db = new sqlite3.Database(dbFile);
 
+// Parse JSON bodies
 app.use(bodyParser.json());
 
 // === Generate 100 keys on first run ===
@@ -68,36 +30,46 @@ app.get("/", (req, res) => {
   res.send("License API is running!");
 });
 
-// === License verification route
-app.post("/verify", (req, res) => {
-  console.log("🔧 /verify called with:", req.body);
-
-  const { license, hwid } = req.body || {};
-
-  if (!license || !hwid) {
-    return res.status(400).json({ status: "fail", message: "Missing fields" });
-  }
+// === Activate license
+app.post("/activate", (req, res) => {
+  const { license, hwid } = req.body;
+  if (!license || !hwid) return res.status(400).json({ message: "Missing license or hwid" });
 
   db.get("SELECT hwid FROM licenses WHERE license_key = ?", [license], (err, row) => {
-    if (err) {
-      return res.status(500).json({ status: "fail", message: "DB error" });
-    }
-
-    if (!row) {
-      return res.status(403).json({ status: "fail", message: "Invalid license key" });
-    }
+    if (err) return res.status(500).json({ message: "DB error" });
+    if (!row) return res.status(404).json({ message: "License not found" });
 
     if (!row.hwid) {
-      db.run("UPDATE licenses SET hwid = ? WHERE license_key = ?", [hwid, license], (err) => {
-        if (err) {
-          return res.status(500).json({ status: "fail", message: "Activation error" });
-        }
-        return res.json({ status: "success", message: "License activated" });
+      db.run("UPDATE licenses SET hwid = ? WHERE license_key = ?", [hwid, license], err2 => {
+        if (err2) return res.status(500).json({ message: "DB error" });
+        return res.json({ message: "Activated successfully" });
       });
     } else if (row.hwid === hwid) {
-      return res.json({ status: "success", message: "License valid" });
+      return res.json({ message: "Already activated on this machine" });
     } else {
-      return res.status(403).json({ status: "fail", message: "License used on another machine" });
+      return res.status(403).json({ message: "License already bound to another HWID" });
+    }
+  });
+});
+
+// === Verify license
+app.post("/verify", (req, res) => {
+  const { license, hwid } = req.body;
+  if (!license || !hwid) return res.status(400).json({ message: "Missing license or hwid" });
+
+  db.get("SELECT hwid FROM licenses WHERE license_key = ?", [license], (err, row) => {
+    if (err) return res.status(500).json({ message: "DB error" });
+    if (!row) return res.status(403).json({ message: "Invalid license key" });
+
+    if (!row.hwid) {
+      db.run("UPDATE licenses SET hwid = ? WHERE license_key = ?", [hwid, license], err2 => {
+        if (err2) return res.status(500).json({ message: "Activation error" });
+        return res.json({ message: "License activated" });
+      });
+    } else if (row.hwid === hwid) {
+      return res.json({ message: "License valid" });
+    } else {
+      return res.status(403).json({ message: "License used on another machine" });
     }
   });
 });
