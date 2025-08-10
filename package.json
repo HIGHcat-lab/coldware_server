@@ -1,19 +1,17 @@
 {
   "name": "license-server",
   "version": "1.0.0",
-  "description": "HWID-locked license server using Express and SQLite",
+  "description": "HWID-locked license server using Express and Supabase",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
     "body-parser": "^1.20.2",
-    "uuid": "^9.0.0",
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.43.4"
   },
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   }
 }
