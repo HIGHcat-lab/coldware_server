@@ -2,11 +2,10 @@ const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const { v4: uuidv4 } = require("uuid");
+const path = require("path");
 const fs = require("fs");
 
 const app = express();
-const path = require("path");
-const fs = require("fs");
 
 // Ensure .data folder exists
 const dataDir = path.join(__dirname, ".data");
@@ -19,9 +18,8 @@ const dbFile = path.join(dataDir, "licenses.db");
 const exists = fs.existsSync(dbFile);
 const db = new sqlite3.Database(dbFile);
 
-
-// Parse JSON bodies
 app.use(bodyParser.json());
+
 
 // === Generate 100 keys on first run ===
 if (!exists) {
